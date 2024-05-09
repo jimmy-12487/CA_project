@@ -34,7 +34,7 @@ Inserted tag: bootstrap:\
 \ 80010 93824209 67800200 13000000 13000000  ..B.g...........\
 \
     ' $x.dump
-    python ../scripts/objdump2vmh.py $x.dump > $x.vmh;
+    python3 ../scripts/objdump2vmh.py $x.dump > $x.vmh;
 done
 mv bin/*.dump dump/
 mv bin/*.vmh vmh/
