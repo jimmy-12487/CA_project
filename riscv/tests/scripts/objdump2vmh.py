@@ -39,12 +39,12 @@ def main():
         m = lp.match(line)
         if m:
             if state == 'init':
-                print('@{}'.format(int(m.group('addr'), 16)/4))
+                print('@{0:x}'.format(int(int(m.group('addr'), 16)/4)))
             state = 'in-section'
             for v in m.group('v0', 'v1', 'v2', 'v3'):
                 if v:
-                    print(v[6:8]+v[4:6]+v[2:4]+v[0:2])
+                    print (v[6:8]+v[4:6]+v[2:4]+v[0:2])
             continue
 
 if __name__ == '__main__':
-    main()
+    main()  

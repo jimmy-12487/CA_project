@@ -77,27 +77,21 @@ module riscv_CoreCtrl
   //----------------------------------------------------------------------
 
   // PC Mux Select
-
-  assign pc_mux_sel_Phl
-    = brj_taken_Xhl    ? pm_b
-    : brj_taken_Dhl    ? pc_mux_sel_Dhl
-    :                    pm_p;
+  assign pc_mux_sel_Phl = brj_taken_Xhl ? pm_b
+                        : brj_taken_Dhl ? pc_mux_sel_Dhl
+                        : pm_p;
 
   // Only send a valid imem request if not stalled
-
   wire   imemreq_val_Phl = reset || !stall_Phl;
   assign imemreq_val     = imemreq_val_Phl;
 
   // Dummy Squash Signal
-
   wire squash_Phl = 1'b0;
 
   // Stall in PC if F is stalled
-
   wire stall_Phl = stall_Fhl;
 
   // Next bubble bit
-
   wire bubble_next_Phl = ( squash_Phl || stall_Phl );
 
   //----------------------------------------------------------------------
@@ -105,17 +99,19 @@ module riscv_CoreCtrl
   //----------------------------------------------------------------------
 
   reg imemreq_val_Fhl;
-
   reg bubble_Fhl;
 
-  always @ ( posedge clk ) begin
-    // Only pipeline the bubble bit if the next stage is not stalled
+  // Only pipeline the bubble bit if the next stage is not stalled
+  always @ ( posedge clk ) begin  
     if ( reset ) begin
       bubble_Fhl <= 1'b0;
     end
     else if( !stall_Fhl ) begin
       bubble_Fhl <= bubble_next_Phl;
     end
+  end
+
+  always @(posedge clk) begin
     imemreq_val_Fhl <= imemreq_val_Phl;
   end
 
@@ -124,22 +120,16 @@ module riscv_CoreCtrl
   //----------------------------------------------------------------------
 
   // Is the current stage valid?
-
   wire inst_val_Fhl = ( !bubble_Fhl && !squash_Fhl );
 
   // Squash instruction in F stage if branch taken for a valid
   // instruction or if there was an exception in X stage
-
-  wire squash_Fhl
-    = ( inst_val_Dhl && brj_taken_Dhl )
-   || ( inst_val_Xhl && brj_taken_Xhl );
+  wire squash_Fhl = (inst_val_Dhl && brj_taken_Dhl) || (inst_val_Xhl && brj_taken_Xhl);
 
   // Stall in F if D is stalled
-
   assign stall_Fhl = stall_Dhl;
 
   // Next bubble bit
-
   wire bubble_sel_Fhl  = ( squash_Fhl || stall_Fhl );
   wire bubble_next_Fhl = ( !bubble_sel_Fhl ) ? bubble_Fhl
                        : ( bubble_sel_Fhl )  ? 1'b1

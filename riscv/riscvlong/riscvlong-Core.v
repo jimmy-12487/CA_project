@@ -16,24 +16,20 @@ module riscv_Core
   input         reset,
 
   // Instruction Memory Request Port
-
   output [`VC_MEM_REQ_MSG_SZ(32,32)-1:0] imemreq_msg,
   output                                 imemreq_val,
   input                                  imemreq_rdy,
 
   // Instruction Memory Response Port
-
   input [`VC_MEM_RESP_MSG_SZ(32)-1:0] imemresp_msg,
   input                               imemresp_val,
 
   // Data Memory Request Port
-
   output [`VC_MEM_REQ_MSG_SZ(32,32)-1:0] dmemreq_msg,
   output                                 dmemreq_val,
   input                                  dmemreq_rdy,
 
   // Data Memory Response Port
-
   input [`VC_MEM_RESP_MSG_SZ(32)-1:0] dmemresp_msg,
   input                               dmemresp_val,
 
@@ -56,16 +52,20 @@ module riscv_Core
   wire  [2:0] op1_mux_sel_Dhl;
   wire [31:0] inst_Dhl;
   wire  [3:0] alu_fn_Xhl;
+
   wire  [2:0] muldivreq_msg_fn_Dhl;
   wire        muldivreq_val;
   wire        muldivreq_rdy;
   wire        muldivresp_val;
   wire        muldivresp_rdy;
   wire        muldiv_mux_sel_X3hl;
+
   wire        execute_mux_sel_X3hl;
   wire  [2:0] dmemresp_mux_sel_Mhl;
+
   wire        dmemresp_queue_en_Mhl;
   wire        dmemresp_queue_val_Mhl;
+
   wire        wb_mux_sel_Mhl;
   wire        rf_wen_Whl;
   wire  [4:0] rf_waddr_Whl;
@@ -140,14 +140,12 @@ module riscv_Core
     .reset                  (reset),
 
     // Instruction Memory Port
-
     .imemreq_val            (imemreq_val),
     .imemreq_rdy            (imemreq_rdy),
     .imemresp_msg_data      (imemresp_msg_data),
     .imemresp_val           (imemresp_val),
 
     // Data Memory Port
-
     .dmemreq_msg_rw         (dmemreq_msg_rw),
     .dmemreq_msg_len        (dmemreq_msg_len),
     .dmemreq_val            (dmemreq_val),

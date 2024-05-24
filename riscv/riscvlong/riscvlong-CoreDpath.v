@@ -88,18 +88,15 @@ module riscv_CoreDpath
   assign jump_targ_Phl      = jump_targ_Dhl;
   assign jumpreg_targ_Phl   = jumpreg_targ_Dhl;
 
-  assign pc_mux_out_Phl
-    = ( pc_mux_sel_Phl == 2'd0 ) ? pc_plus4_Phl
-    : ( pc_mux_sel_Phl == 2'd1 ) ? branch_targ_Phl
-    : ( pc_mux_sel_Phl == 2'd2 ) ? jump_targ_Phl
-    : ( pc_mux_sel_Phl == 2'd3 ) ? jumpreg_targ_Phl
-    :                              32'bx;
+  assign pc_mux_out_Phl = ( pc_mux_sel_Phl == 2'd0 ) ? pc_plus4_Phl
+                        : ( pc_mux_sel_Phl == 2'd1 ) ? branch_targ_Phl
+                        : ( pc_mux_sel_Phl == 2'd2 ) ? jump_targ_Phl
+                        : ( pc_mux_sel_Phl == 2'd3 ) ? jumpreg_targ_Phl
+                        : 32'bx;
 
   // Send out imem request early
 
-  assign imemreq_msg_addr
-    = ( reset ) ? reset_vector
-    :             pc_mux_out_Phl;
+  assign imemreq_msg_addr = (reset) ? reset_vector : pc_mux_out_Phl;
 
   //----------------------------------------------------------------------
   // F <- P
@@ -121,9 +118,7 @@ module riscv_CoreDpath
   //--------------------------------------------------------------------
 
   // PC incrementer
-
   wire [31:0] pc_plus4_Fhl;
-
   assign pc_plus4_Fhl = pc_Fhl + 32'd4;
 
   //----------------------------------------------------------------------
@@ -173,17 +168,15 @@ module riscv_CoreDpath
 
   // Jump reg address
 
-  wire [31:0] jumpreg_targ_Dhl;
-
   wire [31:0] jumpreg_targ_pretruncate_Dhl = rdata0_byp_mux_out_Dhl + imm_i_Dhl;
+  
+  wire [31:0] jumpreg_targ_Dhl;
   assign jumpreg_targ_Dhl  = {jumpreg_targ_pretruncate_Dhl[31:1], 1'b0};
 
   // Shift amount immediate
-
   wire [31:0] shamt_Dhl = { 27'b0, inst_shamt_Dhl };
 
   // Constant operand mux inputs
-
   wire [31:0] const0    = 32'd0;
 
 	// rdata0 bypass
