@@ -44,7 +44,7 @@ subpkgs = \
   mcriscv \
   riscvstall \
   riscvlong \
-
+	riscvi2oi \
 #-------------------------------------------------------------------------
 # List of Assembly Tests
 #-------------------------------------------------------------------------
@@ -94,6 +94,8 @@ tests = \
   riscv-xor.vmh \
   riscv-xori.vmh \
 
+riscvi2oi_rtl_sim = riscvi2oi-sim
+riscvi2oi_rtl_rand_sim = riscvi2oi-randdelay-sim
 riscvstall_rtl_sim = riscvstall-sim
 riscvstall_rtl_rand_sim = riscvstall-randdelay-sim
 riscvlong_rtl_sim = riscvlong-sim
@@ -116,6 +118,14 @@ $(long_tests_rand_outs) : %-long-rand.out : %.vmh $(riscvlong_rtl_rand_sim)
 	./$(riscvlong_rtl_rand_sim) +stats=1 +vcd=1 +exe=$< > $@
 
 
+i2oi_tests_outs = $(patsubst %.vmh,%-i2oi.out,$(tests))
+$(i2oi_tests_outs) : %-i2oi.out : %.vmh $(riscvi2oi_rtl_sim)
+	./$(riscvi2oi_rtl_sim) +stats=1 +vcd=1 +exe=$< > $@
+
+i2oi_tests_rand_outs = $(patsubst %.vmh,%-i2oi-rand.out,$(tests))
+$(i2oi_tests_rand_outs) : %-i2oi-rand.out : %.vmh $(riscvi2oi_rtl_rand_sim)
+	./$(riscvi2oi_rtl_rand_sim) +stats=1 +vcd=1 +exe=$< > $@
+
 check-asm-riscvstall : $(stall_tests_outs)
 	@echo; \
   perl -ne 'print "  [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
@@ -136,11 +146,23 @@ check-asm-rand-riscvlong : $(long_tests_rand_outs)
   perl -ne 'print "  [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
        $(long_tests_rand_outs); echo;
 
+
+check-asm-riscvi2oi : $(i2oi_tests_outs)
+	@echo; \
+  perl -ne 'print "  [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
+       $(i2oi_tests_outs); echo;
+
+check-asm-rand-riscvi2oi : $(i2oi_tests_rand_outs)
+	@echo; \
+  perl -ne 'print "  [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
+       $(i2oi_tests_rand_outs); echo;
+
 junk += $(stall_tests_outs)
 junk += $(stall_tests_rand_outs)
 junk += $(long_tests_outs)
 junk += $(long_tests_rand_outs)
-
+junk += $(i2oi_tests_outs)
+junk += $(i2oi_tests_rand_outs)
 #-------------------------------------------------------------------------
 # List of Benchmarks
 #-------------------------------------------------------------------------
@@ -151,6 +173,7 @@ bmarks = \
   ubmark-masked-filter.vmh \
   ubmark-bin-search.vmh \
 
+
 stall_bmarks_outs = $(patsubst %.vmh,%-stall.out,$(bmarks))
 $(stall_bmarks_outs) : %-stall.out : %.vmh $(riscvstall_rtl_sim)
 	./$(riscvstall_rtl_sim) +verbose=1 +vcd=1 +exe=$< > $@
@@ -158,6 +181,11 @@ $(stall_bmarks_outs) : %-stall.out : %.vmh $(riscvstall_rtl_sim)
 long_bmarks_outs = $(patsubst %.vmh,%-long.out,$(bmarks))
 $(long_bmarks_outs) : %-long.out : %.vmh $(riscvlong_rtl_sim)
 	./$(riscvlong_rtl_sim) +verbose=1 +vcd=1 +exe=$< > $@
+
+i2oi_bmarks_outs = $(patsubst %.vmh,%-i2oi.out,$(bmarks))
+$(i2oi_bmarks_outs) : %-i2oi.out : %.vmh $(riscvi2oi_rtl_sim)
+	./$(riscvi2oi_rtl_sim) +verbose=1 +vcd=1 +exe=$< > $@
+
 
 run-bmark-riscvstall : $(stall_bmarks_outs)
 	@echo; \
@@ -169,14 +197,28 @@ run-bmark-riscvlong : $(long_bmarks_outs)
   perl -ne 'print "  [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
        $(long_bmarks_outs); echo;
 
+run-bmark-riscvi2oi : $(i2oi_bmarks_outs)
+	@echo; \
+  perl -ne 'print "  [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
+       $(i2oi_bmarks_outs); echo;
+
 stall_bmarks_rand_outs = $(patsubst %.vmh,%-stall-rand.out,$(bmarks))
 long_bmarks_rand_outs = $(patsubst %.vmh,%-long-rand.out,$(bmarks))
+i2oi_bmarks_rand_outs = $(patsubst %.vmh,%-i2oi-rand.out,$(bmarks))
+
+$(i2oi_bmarks_rand_outs) : %-i2oi-rand.out : %.vmh $(riscvi2oi_rtl_rand_sim)
+	./$(riscvi2oi_rtl_rand_sim) +verbose=1 +vcd=1 +exe=$< > $@
 
 $(stall_bmarks_rand_outs) : %-stall-rand.out : %.vmh $(riscvstall_rtl_rand_sim)
 	./$(riscvstall_rtl_rand_sim) +verbose=1 +vcd=1 +exe=$< > $@
 
 $(long_bmarks_rand_outs) : %-long-rand.out : %.vmh $(riscvlong_rtl_rand_sim)
 	./$(riscvlong_rtl_rand_sim) +verbose=1 +vcd=1 +exe=$< > $@
+
+run-bmark-rand-riscvi2oi : $(i2oi_bmarks_rand_outs)
+	@echo; \
+  perl -ne 'print "  [$$1] $$ARGV \t$$2\n" if /\*{3}(.{8})\*{3}(.*)/' \
+       $(i2oi_bmarks_rand_outs); echo;
 
 run-bmark-rand-riscvstall : $(stall_bmarks_rand_outs)
 	@echo; \
@@ -190,6 +232,7 @@ run-bmark-rand-riscvlong : $(long_bmarks_rand_outs)
 
 junk += $(stall_bmarks_outs)
 junk += $(long_bmarks_outs)
+junk += $(i2oi_bmarks_outs)
 
 #-------------------------------------------------------------------------
 # Programs
