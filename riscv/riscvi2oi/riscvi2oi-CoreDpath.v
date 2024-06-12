@@ -644,17 +644,7 @@ module riscv_CoreDpath
   reg  [31:0] aluB_out_Whl;
 
   always @ (posedge clk) begin
-    if( !stall_Whl ) beginpB0_byp_mux_sel_Ihl,
-  output  [1:0] opB0_mux_sel_Ihl,
-  output  [3:0] opB1_byp_mux_sel_Ihl,
-  output  [2:0] opB1_mux_sel_Ihl,
-  output [31:0] instA_Ihl,
-  output [31:0] instB_Ihl,
-  output  [3:0] aluA_fn_X0hl,
-  output  [3:0] aluB_fn_X0hl,
-  output  [2:0] muldivreq_msg_fn_Ihl,
-  output        muldivreq_val,
-  input         muldi
+    if( !stall_Whl ) begin
       pcA_Whl                 <= pcA_X3hl;
       wbA_mux_out_Whl         <= executeA_mux_out_X3hl;
 
@@ -662,7 +652,6 @@ module riscv_CoreDpath
       aluB_out_Whl            <= aluB_out_X0hl;
     end
   end
-
   //----------------------------------------------------------------------
   // Writeback Stage
   //----------------------------------------------------------------------
