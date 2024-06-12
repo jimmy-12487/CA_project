@@ -40,10 +40,10 @@ module riscv_CoreScoreboard
   input         stall_X3hl,
   input         stall_Whl,
 
-  input  [ 4:0] rob_commit_slot_1,  // First committed slot in the ROB
-  input         rob_commit_val_1,   // Ensure ROB slot 1 is valid
-  input  [ 4:0] rob_commit_slot_2,  // Second committed slot in the ROB
-  input         rob_commit_val_2,   // Ensure ROB slot 2 is valid
+  input  [ 4:0] ROB_commit_slot_A,  // First committed slot in the ROB
+  input         ROB_commit_ready_A,   // Ensure ROB slot 1 is valid
+  input  [ 4:0] ROB_commit_slot_B,  // Second committed slot in the ROB
+  input         ROB_commit_ready_B,   // Ensure ROB slot 2 is valid
 
   output [ 3:0] op0_A_byp_sel,   // rs0_A bypass signal
   output [ 3:0] op1_A_byp_sel,   // rs1_A bypass signal
@@ -166,7 +166,6 @@ module riscv_CoreScoreboard
   localparam byp_X3_A = 4'd4;  // Bypass from X3_A
   localparam byp_W_A  = 4'd5;  // Bypass from W_A
 
-
   localparam byp_X0_B = 4'd6;  // Bypass from X0_B
   localparam byp_X1_B = 4'd7;  // Bypass from X1_B
   localparam byp_X2_B = 4'd8;  // Bypass from X2_B
@@ -246,4 +245,3 @@ module riscv_CoreScoreboard
 endmodule
 
 `endif
-
