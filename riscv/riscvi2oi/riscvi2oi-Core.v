@@ -101,22 +101,22 @@ module riscv_Core
   wire        branch_cond_geu_X0hl;
   wire [31:0] proc2csr_data_Whl;
 
-  wire [ 4:0] opA0_byp_rob_slot_Ihl;
-  wire [ 4:0] opA1_byp_rob_slot_Ihl;
-  wire [ 4:0] opB0_byp_rob_slot_Ihl;
-  wire [ 4:0] opB1_byp_rob_slot_Ihl;
+  wire [ 4:0] opA0_byp_ROB_slot_Ihl;
+  wire [ 4:0] opA1_byp_ROB_slot_Ihl;
+  wire [ 4:0] opB0_byp_ROB_slot_Ihl;
+  wire [ 4:0] opB1_byp_ROB_slot_Ihl;
 
-  wire        rob_fill_wen_A_Whl;
-  wire [ 4:0] rob_fill_slot_A_Whl;
-  wire        rob_fill_wen_B_Whl;
-  wire [ 4:0] rob_fill_slot_B_Whl;
+  wire        ROB_fill_wen_A_Whl;
+  wire [ 4:0] ROB_commit_req_slot_A_Whl;
+  wire        ROB_fill_wen_B_Whl;
+  wire [ 4:0] ROB_commit_req_slot_B_Whl;
 
-  wire        rob_commit_wen_1_Chl;
-  wire [ 4:0] rob_commit_slot_1_Chl;
-  wire [ 4:0] rob_commit_waddr_1_Chl;
-  wire        rob_commit_wen_2_Chl;
-  wire [ 4:0] rob_commit_slot_2_Chl;
-  wire [ 4:0] rob_commit_waddr_2_Chl;
+  wire        ROB_commit_wen_1_Chl;
+  wire [ 4:0] ROB_commit_slot_1_Chl;
+  wire [ 4:0] ROB_commit_waddr_1_Chl;
+  wire        ROB_commit_wen_2_Chl;
+  wire [ 4:0] ROB_commit_slot_2_Chl;
+  wire [ 4:0] ROB_commit_waddr_2_Chl;
 
   //----------------------------------------------------------------------
   // Pack Memory Request Messages
@@ -252,22 +252,22 @@ module riscv_Core
     .proc2csr_data_Whl      (proc2csr_data_Whl),
 
     // Reorder Buffer Signals (ctrl->dpath)
-    .opA0_byp_rob_slot_Ihl  (opA0_byp_rob_slot_Ihl),
-    .opA1_byp_rob_slot_Ihl  (opA1_byp_rob_slot_Ihl),
-    .opB0_byp_rob_slot_Ihl  (opB0_byp_rob_slot_Ihl),
-    .opB1_byp_rob_slot_Ihl  (opB1_byp_rob_slot_Ihl),
+    .opA0_byp_ROB_slot_Ihl  (opA0_byp_ROB_slot_Ihl),
+    .opA1_byp_ROB_slot_Ihl  (opA1_byp_ROB_slot_Ihl),
+    .opB0_byp_ROB_slot_Ihl  (opB0_byp_ROB_slot_Ihl),
+    .opB1_byp_ROB_slot_Ihl  (opB1_byp_ROB_slot_Ihl),
 
-    .rob_fill_wen_A_Whl     (rob_fill_wen_A_Whl),
-    .rob_fill_slot_A_Whl    (rob_fill_slot_A_Whl),
-    .rob_fill_wen_B_Whl     (rob_fill_wen_B_Whl),
-    .rob_fill_slot_B_Whl    (rob_fill_slot_B_Whl),
+    .ROB_fill_wen_A_Whl     (ROB_fill_wen_A_Whl),
+    .ROB_commit_req_slot_A_Whl    (ROB_commit_req_slot_A_Whl),
+    .ROB_fill_wen_B_Whl     (ROB_fill_wen_B_Whl),
+    .ROB_commit_req_slot_B_Whl    (ROB_commit_req_slot_B_Whl),
 
-    .rob_commit_wen_1_Chl   (rob_commit_wen_1_Chl),
-    .rob_commit_slot_1_Chl  (rob_commit_slot_1_Chl),
-    .rob_commit_waddr_1_Chl (rob_commit_waddr_1_Chl),
-    .rob_commit_wen_2_Chl   (rob_commit_wen_2_Chl),
-    .rob_commit_slot_2_Chl  (rob_commit_slot_2_Chl),
-    .rob_commit_waddr_2_Chl (rob_commit_waddr_2_Chl),
+    .ROB_commit_wen_1_Chl   (ROB_commit_wen_1_Chl),
+    .ROB_commit_slot_1_Chl  (ROB_commit_slot_1_Chl),
+    .ROB_commit_waddr_1_Chl (ROB_commit_waddr_1_Chl),
+    .ROB_commit_wen_2_Chl   (ROB_commit_wen_2_Chl),
+    .ROB_commit_slot_2_Chl  (ROB_commit_slot_2_Chl),
+    .ROB_commit_waddr_2_Chl (ROB_commit_waddr_2_Chl),
 
     // CSR Status
 
@@ -342,22 +342,22 @@ module riscv_Core
     .proc2csr_data_Whl       (proc2csr_data_Whl),
 
     // Reorder Buffer Signals (ctrl->dpath)
-    .opA0_byp_rob_slot_Ihl  (opA0_byp_rob_slot_Ihl),
-    .opA1_byp_rob_slot_Ihl  (opA1_byp_rob_slot_Ihl),
-    .opB0_byp_rob_slot_Ihl  (opB0_byp_rob_slot_Ihl),
-    .opB1_byp_rob_slot_Ihl  (opB1_byp_rob_slot_Ihl),
+    .opA0_byp_ROB_slot_Ihl  (opA0_byp_ROB_slot_Ihl),
+    .opA1_byp_ROB_slot_Ihl  (opA1_byp_ROB_slot_Ihl),
+    .opB0_byp_ROB_slot_Ihl  (opB0_byp_ROB_slot_Ihl),
+    .opB1_byp_ROB_slot_Ihl  (opB1_byp_ROB_slot_Ihl),
     
-    .rob_fill_wen_A_Whl     (rob_fill_wen_A_Whl),
-    .rob_fill_slot_A_Whl    (rob_fill_slot_A_Whl),
-    .rob_fill_wen_B_Whl     (rob_fill_wen_B_Whl),
-    .rob_fill_slot_B_Whl    (rob_fill_slot_B_Whl),
+    .ROB_fill_wen_A_Whl     (ROB_fill_wen_A_Whl),
+    .ROB_commit_req_slot_A_Whl    (ROB_commit_req_slot_A_Whl),
+    .ROB_fill_wen_B_Whl     (ROB_fill_wen_B_Whl),
+    .ROB_commit_req_slot_B_Whl    (ROB_commit_req_slot_B_Whl),
 
-    .rob_commit_wen_1_Chl   (rob_commit_wen_1_Chl),
-    .rob_commit_slot_1_Chl  (rob_commit_slot_1_Chl),
-    .rob_commit_waddr_1_Chl (rob_commit_waddr_1_Chl),
-    .rob_commit_wen_2_Chl   (rob_commit_wen_2_Chl),
-    .rob_commit_slot_2_Chl  (rob_commit_slot_2_Chl),
-    .rob_commit_waddr_2_Chl (rob_commit_waddr_2_Chl)
+    .ROB_commit_wen_1_Chl   (ROB_commit_wen_1_Chl),
+    .ROB_commit_slot_1_Chl  (ROB_commit_slot_1_Chl),
+    .ROB_commit_waddr_1_Chl (ROB_commit_waddr_1_Chl),
+    .ROB_commit_wen_2_Chl   (ROB_commit_wen_2_Chl),
+    .ROB_commit_slot_2_Chl  (ROB_commit_slot_2_Chl),
+    .ROB_commit_waddr_2_Chl (ROB_commit_waddr_2_Chl)
   );
 
 endmodule

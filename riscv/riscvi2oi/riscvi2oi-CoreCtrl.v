@@ -82,22 +82,22 @@ module riscv_CoreCtrl
 
   // Reorder Buffer Signals (ctrl->dpath)
 
-  output [ 4:0] opA0_byp_rob_slot_Ihl,
-  output [ 4:0] opA1_byp_rob_slot_Ihl,
-  output [ 4:0] opB0_byp_rob_slot_Ihl,
-  output [ 4:0] opB1_byp_rob_slot_Ihl,
+  output [ 4:0] opA0_byp_ROB_slot_Ihl,
+  output [ 4:0] opA1_byp_ROB_slot_Ihl,
+  output [ 4:0] opB0_byp_ROB_slot_Ihl,
+  output [ 4:0] opB1_byp_ROB_slot_Ihl,
 
-  output        rob_fill_wen_A_Whl,
-  output [ 4:0] rob_fill_slot_A_Whl,
-  output        rob_fill_wen_B_Whl,
-  output [ 4:0] rob_fill_slot_B_Whl,
+  output        ROB_fill_wen_A_Whl,
+  output reg [ 4:0] ROB_commit_req_slot_A_Whl,
+  output        ROB_fill_wen_B_Whl,
+  output reg [ 4:0] ROB_commit_req_slot_B_Whl,
 
-  output        rob_commit_wen_1_Chl,
-  output [ 4:0] rob_commit_slot_1_Chl,
-  output [ 4:0] rob_commit_waddr_1_Chl,
-  output        rob_commit_wen_2_Chl,
-  output [ 4:0] rob_commit_slot_2_Chl,
-  output [ 4:0] rob_commit_waddr_2_Chl,
+  output        ROB_commit_wen_1_Chl,
+  output [ 4:0] ROB_commit_slot_1_Chl,
+  output [ 4:0] ROB_commit_waddr_1_Chl,
+  output        ROB_commit_wen_2_Chl,
+  output [ 4:0] ROB_commit_slot_2_Chl,
+  output [ 4:0] ROB_commit_waddr_2_Chl,
 
   // CSR Status
 
@@ -277,7 +277,7 @@ module riscv_CoreCtrl
   localparam byp_BX2 = 4'd8;  // Bypass from BX2
   localparam byp_BX3 = 4'd9;  // Bypass from BX3
   localparam byp_BW  = 4'd10; // Bypass from BW
-  localparam byp_rob = 4'd11; // Bypass from reorder buffer
+  localparam byp_ROB = 4'd11; // Bypass from reorder buffer
 
   // Operand 0 Mux Select
 
@@ -660,23 +660,23 @@ module riscv_CoreCtrl
   // Decode Stage: Reorder Buffer Logic
   //----------------------------------------------------------------------
 
-  wire rob_req_rdy_Dhl;
+  wire ROB_req_rdy_Dhl;
 
-  wire src00_renamed;
-  wire src01_renamed;
-  wire src10_renamed;
-  wire src11_renamed;
+  wire rs0_i1_renamed;
+  wire rs1_i1_renamed;
+  wire rs0_i2_renamed;
+  wire rs1_i2_renamed;
 
-  wire [4:0] src00_slot;
-  wire [4:0] src01_slot;
-  wire [4:0] src10_slot;
-  wire [4:0] src11_slot;
+  wire [4:0] rs0_i1_slot;
+  wire [4:0] rs1_i1_slot;
+  wire [4:0] rs0_i2_slot;
+  wire [4:0] rs1_i2_slot;
 
-  wire [4:0] rob_resp_slot_1;
-  wire [4:0] rob_resp_slot_2;
+  wire [4:0] ROB_resp_slot_1;
+  wire [4:0] ROB_resp_slot_2;
 
-  wire rob_commit_val_1;
-  wire rob_commit_val_2;
+  wire ROB_commit_ready_A;
+  wire ROB_commit_ready_B;
 
   wire raw_hazard0_Dhl = ( inst_val_Dhl && rf0_wen_Dhl )
                        && ( ( rf0_waddr_Dhl == rs10_addr_Dhl ) && rs10_en_Dhl );
@@ -710,7 +710,7 @@ module riscv_CoreCtrl
 
   // Handle the case of two branches in D at the same time
   //    When D can issue, issue the first branch and squash it afterwards
-  //    Later allocate rob entry and issue the second instruction only
+  //    Later allocate ROB entry and issue the second instruction only
   //    Senc information as to whether either instruction is squashed to I stage
   reg squash_ir0_Dhl;
   wire double_br_Dhl = br0_sel_Dhl && br1_sel_Dhl &&
@@ -719,11 +719,11 @@ module riscv_CoreCtrl
   // Allocate the first entry if I isn't stalled and the instructions are valid.
   // Allocate the second entry if the first is not a jump, and if it is not a
   //    double branch case.
-  wire rob_req_val_1_Dhl = inst_val_Dhl && !stall_agg_Dhl && !squash_ir0_Dhl;
-  wire rob_req_val_2_Dhl = inst_val_Dhl && !stall_Dhl && !j0_en_Dhl && !double_br_Dhl;
+  wire ROB_req_val_1_Dhl = inst_val_Dhl && !stall_agg_Dhl && !squash_ir0_Dhl;
+  wire ROB_req_val_2_Dhl = inst_val_Dhl && !stall_Dhl && !j0_en_Dhl && !double_br_Dhl;
 
-  wire rob_req_spec_1_Dhl = spec_Dhl;
-  wire rob_req_spec_2_Dhl = spec_Dhl || (br0_sel_Dhl != br_none && !squash_ir0_Dhl);
+  wire ROB_req_spec_1_Dhl = spec_Dhl;
+  wire ROB_req_spec_2_Dhl = spec_Dhl || (br0_sel_Dhl != br_none && !squash_ir0_Dhl);
 
   reg rs00_renamed_Dhl;
   reg rs01_renamed_Dhl;
@@ -735,25 +735,25 @@ module riscv_CoreCtrl
   reg [4:0] rs10_rt_slot_Dhl;
   reg [4:0] rs11_rt_slot_Dhl;
 
-  reg [4:0] rob_fill_slot_0_Dhl;
-  reg [4:0] rob_fill_slot_1_Dhl;
+  reg [4:0] ROB_fill_slot_0_Dhl;
+  reg [4:0] ROB_fill_slot_1_Dhl;
 
   always @(*) begin
-    rs00_renamed_Dhl = src00_renamed;
-    rs01_renamed_Dhl = src01_renamed;
-    rs10_renamed_Dhl = src10_renamed;
-    rs11_renamed_Dhl = src11_renamed;
+    rs00_renamed_Dhl = rs0_i1_renamed;
+    rs01_renamed_Dhl = rs1_i1_renamed;
+    rs10_renamed_Dhl = rs0_i2_renamed;
+    rs11_renamed_Dhl = rs1_i2_renamed;
 
-    rs00_rt_slot_Dhl = src00_slot;
-    rs01_rt_slot_Dhl = src01_slot;
-    rs10_rt_slot_Dhl = src10_slot;
-    rs11_rt_slot_Dhl = src11_slot;
+    rs00_rt_slot_Dhl = rs0_i1_slot;
+    rs01_rt_slot_Dhl = rs1_i1_slot;
+    rs10_rt_slot_Dhl = rs0_i2_slot;
+    rs11_rt_slot_Dhl = rs1_i2_slot;
 
-    rob_fill_slot_0_Dhl = rob_resp_slot_1;
-    rob_fill_slot_1_Dhl = rob_resp_slot_2;
+    ROB_fill_slot_0_Dhl = ROB_resp_slot_1;
+    ROB_fill_slot_1_Dhl = ROB_resp_slot_2;
   end
 
-  riscv_CoreReorderBuffer rob
+  riscv_CoreReorderBuffer ROB
   (
     .clk                         (clk),
     .reset                       (reset),
@@ -761,52 +761,52 @@ module riscv_CoreCtrl
     .brj_taken_X0hl              (brj_taken_X0hl),
     .brj_resolved_X0hl           (brj_resolved_X0hl),
 
-    .rob_alloc_req_rdy           (rob_req_rdy_Dhl),
+    .ROB_alloc_valid             (ROB_req_rdy_Dhl),
 
-    .rob_alloc_req_val_1         (rob_req_val_1_Dhl),
-    .rob_alloc_req_wen_1         (rf0_wen_Dhl),
-    .rob_alloc_req_spec_1        (rob_req_spec_1_Dhl),
-    .rob_alloc_req_preg_1        (rf0_waddr_Dhl),
-    .rob_fill_val_1              (rob_fill_val_A_Whl),
-    .rob_fill_slot_1             (rob_fill_slot_A_Whl),
-    .rob_commit_slot_1           (rob_commit_slot_1_Chl),
-    .rob_commit_wen_1            (rob_commit_wen_1_Chl),
-    .rob_commit_rf_waddr_1       (rob_commit_waddr_1_Chl),
-    .rob_commit_val_1            (rob_commit_val_1),
-    .rob_commit_spec_1           (rob_commit_spec_1),
+    .ROB_alloc_req_A             (ROB_req_val_1_Dhl),
+    .ROB_alloc_req_wen_1         (rf0_wen_Dhl),
+    .ROB_alloc_req_spec_1        (ROB_req_spec_1_Dhl),
+    .ROB_alloc_req_preg_1        (rf0_waddr_Dhl),
+    .ROB_commit_req_A            (ROB_commit_req_A_Whl),
+    .ROB_commit_req_slot_A       (ROB_commit_req_slot_A_Whl),
+    .ROB_commit_slot_A           (ROB_commit_slot_1_Chl),
+    .ROB_commit_we_A             (ROB_commit_wen_1_Chl),
+    .ROB_commit_rdaddr_A       (ROB_commit_waddr_1_Chl),
+    .ROB_commit_ready_A            (ROB_commit_ready_A),
+    .ROB_commit_spec_A           (ROB_commit_spec_A),
 
-    .rob_alloc_req_val_2         (rob_req_val_2_Dhl),
-    .rob_alloc_req_wen_2         (rf1_wen_Dhl),
-    .rob_alloc_req_spec_2        (rob_req_spec_2_Dhl),
-    .rob_alloc_req_preg_2        (rf1_waddr_Dhl),
-    .rob_fill_val_2              (rob_fill_val_B_Whl),
-    .rob_fill_slot_2             (rob_fill_slot_B_Whl),
-    .rob_commit_slot_2           (rob_commit_slot_2_Chl),
-    .rob_commit_wen_2            (rob_commit_wen_2_Chl),
-    .rob_commit_rf_waddr_2       (rob_commit_waddr_2_Chl),
-    .rob_commit_val_2            (rob_commit_val_2),
-    .rob_commit_spec_2           (rob_commit_spec_2),
+    .ROB_alloc_req_B             (ROB_req_val_2_Dhl),
+    .ROB_alloc_req_wen_2         (rf1_wen_Dhl),
+    .ROB_alloc_req_spec_2        (ROB_req_spec_2_Dhl),
+    .ROB_alloc_req_preg_2        (rf1_waddr_Dhl),
+    .ROB_commit_req_B              (ROB_commit_req_B_Whl),
+    .ROB_commit_req_slot_B             (ROB_commit_req_slot_B_Whl),
+    .ROB_commit_slot_B           (ROB_commit_slot_2_Chl),
+    .ROB_commit_we_B            (ROB_commit_wen_2_Chl),
+    .ROB_commit_rdaddr_B       (ROB_commit_waddr_2_Chl),
+    .ROB_commit_ready_B            (ROB_commit_ready_B),
+    .ROB_commit_spec_B           (ROB_commit_spec_B),
 
-    .rob_alloc_resp_slot_1       (rob_resp_slot_1),
-    .rob_alloc_resp_slot_2       (rob_resp_slot_2),
+    .ROB_alloc_slot_A            (ROB_resp_slot_1),
+    .ROB_alloc_slot_B            (ROB_resp_slot_2),
 
     .raw_hazard0                 (raw_hazard0_Dhl),
     .raw_hazard1                 (raw_hazard1_Dhl),
 
-    .src00                       (rs00_addr_Dhl),
-    .src01                       (rs01_addr_Dhl),
-    .src10                       (rs10_addr_Dhl),
-    .src11                       (rs11_addr_Dhl),
+    .rs0_i1                       (rs00_addr_Dhl),
+    .rs1_i1                       (rs01_addr_Dhl),
+    .rs0_i2                       (rs10_addr_Dhl),
+    .rs1_i2                       (rs11_addr_Dhl),
 
-    .src00_renamed               (src00_renamed),
-    .src01_renamed               (src01_renamed),
-    .src10_renamed               (src10_renamed),
-    .src11_renamed               (src11_renamed),
+    .rs0_i1_renamed               (rs0_i1_renamed),
+    .rs1_i1_renamed               (rs1_i1_renamed),
+    .rs0_i2_renamed               (rs0_i2_renamed),
+    .rs1_i2_renamed               (rs1_i2_renamed),
 
-    .src00_slot                  (src00_slot),
-    .src01_slot                  (src01_slot),
-    .src10_slot                  (src10_slot),
-    .src11_slot                  (src11_slot)
+    .rs0_i1_slot                  (rs0_i1_slot),
+    .rs1_i1_slot                  (rs1_i1_slot),
+    .rs0_i2_slot                  (rs0_i2_slot),
+    .rs1_i2_slot                  (rs1_i2_slot)
   );
 
   //----------------------------------------------------------------------
@@ -820,17 +820,17 @@ module riscv_CoreCtrl
 
   // Stall in D if the ROB is full, if a second branch is seen before the first
   // resolved, or if I is stalled
-  wire stall_rob_Dhl = !rob_req_rdy_Dhl;
+  wire stall_ROB_Dhl = !ROB_req_rdy_Dhl;
 
   wire stall_br_Dhl = spec_Dhl && (br0_sel_Dhl || br1_sel_Dhl);
 
-  wire stall_agg_Dhl = stall_Ihl || ( (stall_rob_Dhl || stall_br_Dhl) && inst_val_Dhl);
+  wire stall_agg_Dhl = stall_Ihl || ( (stall_ROB_Dhl || stall_br_Dhl) && inst_val_Dhl);
 
   wire stall_Dhl = stall_agg_Dhl || double_br_Dhl;
 
   // Next bubble bit
   // Send a bubble bit if no ROB entries are allocated
-  wire bubble_sel_Dhl  = ( !rob_req_val_1_Dhl && !rob_req_val_2_Dhl );
+  wire bubble_sel_Dhl  = ( !ROB_req_val_1_Dhl && !ROB_req_val_2_Dhl );
   wire bubble_next_Dhl = ( !bubble_sel_Dhl ) ? bubble_Dhl
                        : ( bubble_sel_Dhl )  ? 1'b1
                        :                       1'bx;
@@ -889,10 +889,10 @@ module riscv_CoreCtrl
   reg         rs01_en_Ihl;
   reg         rs10_en_Ihl;
   reg         rs11_en_Ihl;
-  reg  [4:0]  rob_fill_slot_0_Ihl;
-  reg  [4:0]  rob_fill_slot_1_Ihl;
-  reg         rob_fill_val_0_Ihl;
-  reg         rob_fill_val_1_Ihl;
+  reg  [4:0]  ROB_fill_slot_0_Ihl;
+  reg  [4:0]  ROB_fill_slot_1_Ihl;
+  reg         ROB_fill_val_0_Ihl;
+  reg         ROB_fill_val_1_Ihl;
 
   reg         rs00_renamed_Ihl;
   reg         rs01_renamed_Ihl;
@@ -915,7 +915,7 @@ module riscv_CoreCtrl
     end
     else if( !stall_Ihl ) begin
       ir0_Ihl               <= ir0_Dhl;
-      ir0_squashed_Ihl      <= !rob_req_val_1_Dhl;
+      ir0_squashed_Ihl      <= !ROB_req_val_1_Dhl;
       rf0_wen_Ihl           <= rf0_wen_Dhl;
       rf0_waddr_Ihl         <= rf0_waddr_Dhl;
       alu0_fn_Ihl           <= alu0_fn_Dhl;
@@ -935,7 +935,7 @@ module riscv_CoreCtrl
       csr0_addr_Ihl         <= csr0_addr_Dhl;
 
       ir1_Ihl               <= ir1_Dhl;
-      ir1_squashed_Ihl      <= !rob_req_val_2_Dhl;
+      ir1_squashed_Ihl      <= !ROB_req_val_2_Dhl;
       rf1_wen_Ihl           <= rf1_wen_Dhl;
       rf1_waddr_Ihl         <= rf1_waddr_Dhl;
       alu1_fn_Ihl           <= alu1_fn_Dhl;
@@ -962,8 +962,8 @@ module riscv_CoreCtrl
       rs01_en_Ihl           <= rs01_en_Dhl;
       rs10_en_Ihl           <= rs10_en_Dhl;
       rs11_en_Ihl           <= rs11_en_Dhl;
-      rob_fill_slot_0_Ihl   <= rob_fill_slot_0_Dhl;
-      rob_fill_slot_1_Ihl   <= rob_fill_slot_1_Dhl;
+      ROB_fill_slot_0_Ihl   <= ROB_fill_slot_0_Dhl;
+      ROB_fill_slot_1_Ihl   <= ROB_fill_slot_1_Dhl;
 
       rs00_renamed_Ihl      <= rs00_renamed_Dhl;
       rs01_renamed_Ihl      <= rs01_renamed_Dhl;
@@ -1019,16 +1019,16 @@ module riscv_CoreCtrl
   reg        rfA_wen_Ihl;
   reg  [4:0] rfA_waddr_Ihl;
   reg  [3:0] aluA_fn_Ihl;
-  reg  [4:0] rob_fill_slot_A_Ihl;
-  reg        rob_fill_val_A_Ihl;
+  reg  [4:0] ROB_fill_slot_A_Ihl;
+  reg        ROB_fill_val_A_Ihl;
   
 
   reg [31:0] irB_Ihl;
   reg        rfB_wen_Ihl;
   reg  [4:0] rfB_waddr_Ihl;
   reg  [3:0] aluB_fn_Ihl;
-  reg  [4:0] rob_fill_slot_B_Ihl;
-  reg        rob_fill_val_B_Ihl;
+  reg  [4:0] ROB_fill_slot_B_Ihl;
+  reg        ROB_fill_val_B_Ihl;
 
   reg  [2:0] br_sel_Ihl;
   reg        muldivreq_val_Ihl;
@@ -1043,19 +1043,19 @@ module riscv_CoreCtrl
   reg        csr_wen_Ihl;
   reg [11:0] csr_addr_Ihl;
 
-  reg        rsA0_renamed_Ihl;
-  reg        rsA1_renamed_Ihl;
-  reg  [4:0] rsA0_rt_slot_Ihl;
-  reg  [4:0] rsA1_rt_slot_Ihl;
-  reg        rsA0_en_Ihl;
-  reg        rsA1_en_Ihl;
+  reg        rs0_A_renamed_Ihl;
+  reg        rs1_A_renamed_Ihl;
+  reg  [4:0] rs0_A_rt_slot_Ihl;
+  reg  [4:0] rs1_A_rt_slot_Ihl;
+  reg        rs0_A_en_Ihl;
+  reg        rs1_A_en_Ihl;
 
-  reg        rsB0_renamed_Ihl;
-  reg        rsB1_renamed_Ihl;
-  reg  [4:0] rsB0_rt_slot_Ihl;
-  reg  [4:0] rsB1_rt_slot_Ihl;
-  reg        rsB0_en_Ihl;
-  reg        rsB1_en_Ihl;
+  reg        rs0_B_renamed_Ihl;
+  reg        rs1_B_renamed_Ihl;
+  reg  [4:0] rs0_B_rt_slot_Ihl;
+  reg  [4:0] rs1_B_rt_slot_Ihl;
+  reg        rs0_B_en_Ihl;
+  reg        rs1_B_en_Ihl;
 
 
   // For disassembly in dpath
@@ -1155,19 +1155,19 @@ module riscv_CoreCtrl
     = ( steering_mux_sel_Ihl == 1'b0 ) ? op11_mux_sel_Ihl
     : ( steering_mux_sel_Ihl == 1'b1 ) ? op01_mux_sel_Ihl
     :                                    2'bx;
-  assign opA0_byp_rob_slot_Ihl
+  assign opA0_byp_ROB_slot_Ihl
     = ( steering_mux_sel_Ihl == 1'b0 ) ? rs00_rt_slot_Ihl
     : ( steering_mux_sel_Ihl == 1'b1 ) ? rs10_rt_slot_Ihl
     :                                    5'bx;
-  assign opA1_byp_rob_slot_Ihl
+  assign opA1_byp_ROB_slot_Ihl
     = ( steering_mux_sel_Ihl == 1'b0 ) ? rs01_rt_slot_Ihl
     : ( steering_mux_sel_Ihl == 1'b1 ) ? rs11_rt_slot_Ihl
     :                                    5'bx;
-  assign opB0_byp_rob_slot_Ihl
+  assign opB0_byp_ROB_slot_Ihl
     = ( steering_mux_sel_Ihl == 1'b0 ) ? rs10_rt_slot_Ihl
     : ( steering_mux_sel_Ihl == 1'b1 ) ? rs00_rt_slot_Ihl
     :                                    5'bx;
-  assign opB1_byp_rob_slot_Ihl
+  assign opB1_byp_ROB_slot_Ihl
     = ( steering_mux_sel_Ihl == 1'b0 ) ? rs11_rt_slot_Ihl
     : ( steering_mux_sel_Ihl == 1'b1 ) ? rs01_rt_slot_Ihl
     :                                    5'bx;
@@ -1180,7 +1180,7 @@ module riscv_CoreCtrl
       rfA_wen_Ihl          = rf0_wen_Ihl;
       rfA_waddr_Ihl        = rf0_waddr_Ihl;
       aluA_fn_Ihl          = alu0_fn_Ihl;
-      rob_fill_slot_A_Ihl  = rob_fill_slot_0_Ihl;
+      ROB_fill_slot_A_Ihl  = ROB_fill_slot_0_Ihl;
 
       br_sel_Ihl           = br0_sel_Ihl;
       muldivreq_val_Ihl    = muldivreq0_val_Ihl;
@@ -1195,20 +1195,20 @@ module riscv_CoreCtrl
       csr_wen_Ihl          = csr0_wen_Ihl;
       csr_addr_Ihl         = csr0_addr_Ihl;
 
-      rsA0_renamed_Ihl     = rs00_renamed_Ihl;
-      rsA1_renamed_Ihl     = rs01_renamed_Ihl;
-      rsA0_rt_slot_Ihl     = rs00_rt_slot_Ihl;
-      rsA1_rt_slot_Ihl     = rs01_rt_slot_Ihl;
-      rsA0_en_Ihl          = rs00_en_Ihl;
-      rsA1_en_Ihl          = rs01_en_Ihl;
+      rs0_A_renamed_Ihl     = rs00_renamed_Ihl;
+      rs1_A_renamed_Ihl     = rs01_renamed_Ihl;
+      rs0_A_rt_slot_Ihl     = rs00_rt_slot_Ihl;
+      rs1_A_rt_slot_Ihl     = rs01_rt_slot_Ihl;
+      rs0_A_en_Ihl          = rs00_en_Ihl;
+      rs1_A_en_Ihl          = rs01_en_Ihl;
 
       if( !stall_0_Ihl ) begin
         ir0_issued_Ihl     = 1'b1;
-        rob_fill_val_A_Ihl = 1'b1;
+        ROB_fill_val_A_Ihl = 1'b1;
       end
       else begin
         ir0_issued_Ihl     = 1'b0;
-        rob_fill_val_A_Ihl = 1'b0;
+        ROB_fill_val_A_Ihl = 1'b0;
       end
 
       // Issue ir1 to B if ir1, ir0, and X0 are not stalled and if
@@ -1218,15 +1218,15 @@ module riscv_CoreCtrl
         rfB_wen_Ihl          = rf1_wen_Ihl;
         rfB_waddr_Ihl        = rf1_waddr_Ihl;
         aluB_fn_Ihl          = alu1_fn_Ihl;
-        rob_fill_slot_B_Ihl  = rob_fill_slot_1_Ihl;
-        rob_fill_val_B_Ihl   = 1'b1;
+        ROB_fill_slot_B_Ihl  = ROB_fill_slot_1_Ihl;
+        ROB_fill_val_B_Ihl   = 1'b1;
 
-        rsB0_renamed_Ihl     = rs10_renamed_Ihl;
-        rsB1_renamed_Ihl     = rs11_renamed_Ihl;
-        rsB0_rt_slot_Ihl     = rs10_rt_slot_Ihl;
-        rsB1_rt_slot_Ihl     = rs11_rt_slot_Ihl;
-        rsB0_en_Ihl          = rs10_en_Ihl;
-        rsB1_en_Ihl          = rs11_en_Ihl;
+        rs0_B_renamed_Ihl     = rs10_renamed_Ihl;
+        rs1_B_renamed_Ihl     = rs11_renamed_Ihl;
+        rs0_B_rt_slot_Ihl     = rs10_rt_slot_Ihl;
+        rs1_B_rt_slot_Ihl     = rs11_rt_slot_Ihl;
+        rs0_B_en_Ihl          = rs10_en_Ihl;
+        rs1_B_en_Ihl          = rs11_en_Ihl;
 
         ir1_issued_Ihl       = 1'b1;
       end
@@ -1238,7 +1238,7 @@ module riscv_CoreCtrl
         rfB_wen_Ihl          = 1'b0;
 
         ir1_issued_Ihl       = 1'b0;
-        rob_fill_val_B_Ihl   = 1'b0;
+        ROB_fill_val_B_Ihl   = 1'b0;
       end
     end
 
@@ -1249,7 +1249,7 @@ module riscv_CoreCtrl
       rfA_wen_Ihl          = rf1_wen_Ihl;
       rfA_waddr_Ihl        = rf1_waddr_Ihl;
       aluA_fn_Ihl          = alu1_fn_Ihl;
-      rob_fill_slot_A_Ihl  = rob_fill_slot_1_Ihl;
+      ROB_fill_slot_A_Ihl  = ROB_fill_slot_1_Ihl;
 
       br_sel_Ihl           = br1_sel_Ihl;
       aluA_fn_Ihl          = alu1_fn_Ihl;
@@ -1265,22 +1265,22 @@ module riscv_CoreCtrl
       csr_wen_Ihl          = csr1_wen_Ihl;
       csr_addr_Ihl         = csr1_addr_Ihl;
 
-      rsA0_renamed_Ihl     = rs10_renamed_Ihl;
-      rsA1_renamed_Ihl     = rs11_renamed_Ihl;
-      rsA0_rt_slot_Ihl     = rs10_rt_slot_Ihl;
-      rsA1_rt_slot_Ihl     = rs11_rt_slot_Ihl;
-      rsA0_en_Ihl          = rs10_en_Ihl;
-      rsA1_en_Ihl          = rs11_en_Ihl;
+      rs0_A_renamed_Ihl     = rs10_renamed_Ihl;
+      rs1_A_renamed_Ihl     = rs11_renamed_Ihl;
+      rs0_A_rt_slot_Ihl     = rs10_rt_slot_Ihl;
+      rs1_A_rt_slot_Ihl     = rs11_rt_slot_Ihl;
+      rs0_A_en_Ihl          = rs10_en_Ihl;
+      rs1_A_en_Ihl          = rs11_en_Ihl;
 
       // If i1 and X0 are not stalled, both instructions will issued,
       // set ir0_issued_only to 0, and ir1_issued to 1
       if( !stall_1_Ihl ) begin
         ir1_issued_Ihl       = 1'b1;
-        rob_fill_val_A_Ihl   = 1'b1;
+        ROB_fill_val_A_Ihl   = 1'b1;
       end
       else begin
         ir1_issued_Ihl       = 1'b0;
-        rob_fill_val_A_Ihl   = 1'b0;
+        ROB_fill_val_A_Ihl   = 1'b0;
       end
 
       // If ir0 has not been issued, send it to path B
@@ -1289,15 +1289,15 @@ module riscv_CoreCtrl
         rfB_wen_Ihl          = rf0_wen_Ihl;
         rfB_waddr_Ihl        = rf0_waddr_Ihl;
         aluB_fn_Ihl          = alu0_fn_Ihl;
-        rob_fill_slot_B_Ihl  = rob_fill_slot_0_Ihl;
-        rob_fill_val_B_Ihl   = 1'b1;
+        ROB_fill_slot_B_Ihl  = ROB_fill_slot_0_Ihl;
+        ROB_fill_val_B_Ihl   = 1'b1;
 
-        rsB0_renamed_Ihl     = rs00_renamed_Ihl;
-        rsB1_renamed_Ihl     = rs01_renamed_Ihl;
-        rsB0_rt_slot_Ihl     = rs00_rt_slot_Ihl;
-        rsB1_rt_slot_Ihl     = rs01_rt_slot_Ihl;
-        rsB0_en_Ihl          = rs00_en_Ihl;
-        rsB1_en_Ihl          = rs01_en_Ihl;
+        rs0_B_renamed_Ihl     = rs00_renamed_Ihl;
+        rs1_B_renamed_Ihl     = rs01_renamed_Ihl;
+        rs0_B_rt_slot_Ihl     = rs00_rt_slot_Ihl;
+        rs1_B_rt_slot_Ihl     = rs01_rt_slot_Ihl;
+        rs0_B_en_Ihl          = rs00_en_Ihl;
+        rs1_B_en_Ihl          = rs01_en_Ihl;
 
         ir0_issued_Ihl       = 1'b1;
       end
@@ -1308,7 +1308,7 @@ module riscv_CoreCtrl
         rfB_wen_Ihl          = 1'b0;
 
         ir0_issued_Ihl       = 1'b0;
-        rob_fill_val_B_Ihl   = 1'b0;
+        ROB_fill_val_B_Ihl   = 1'b0;
       end
     end
 
@@ -1316,8 +1316,8 @@ module riscv_CoreCtrl
     if ( !inst_val_Ihl || stall_X0hl ) begin
       ir0_issued_Ihl         = 1'b0;
       ir1_issued_Ihl         = 1'b0;
-      rob_fill_val_A_Ihl     = 1'b0;
-      rob_fill_val_B_Ihl     = 1'b0;
+      ROB_fill_val_A_Ihl     = 1'b0;
+      ROB_fill_val_B_Ihl     = 1'b0;
     end
   end
 
@@ -1332,39 +1332,41 @@ module riscv_CoreCtrl
   wire B_issued_Ihl = ( !steering_mux_sel_Ihl && ir1_issued_Ihl ) ||
                       (  steering_mux_sel_Ihl && ir0_issued_Ihl );
 
-  wire stall_0_sb_Ihl = (     (!sb_src_ready[rs00_rt_slot_Ihl] && rs00_en_Ihl && rs00_renamed_Ihl)
-                          ||  (!sb_src_ready[rs01_rt_slot_Ihl] && rs01_en_Ihl && rs01_renamed_Ihl) 
+  wire [31:0] src_ready_sb;
+
+
+  wire stall_0_sb_Ihl = (     (!src_ready_sb[rs00_rt_slot_Ihl] && rs00_en_Ihl && rs00_renamed_Ihl)
+                          ||  (!src_ready_sb[rs01_rt_slot_Ihl] && rs01_en_Ihl && rs01_renamed_Ihl) 
                           ) && inst_val_Ihl;
-  wire stall_1_sb_Ihl = (     (!sb_src_ready[rs10_rt_slot_Ihl] && rs10_en_Ihl && rs10_renamed_Ihl)
-                          ||  (!sb_src_ready[rs11_rt_slot_Ihl] && rs11_en_Ihl && rs11_renamed_Ihl) 
+  wire stall_1_sb_Ihl = (     (!src_ready_sb[rs10_rt_slot_Ihl] && rs10_en_Ihl && rs10_renamed_Ihl)
+                          ||  (!src_ready_sb[rs11_rt_slot_Ihl] && rs11_en_Ihl && rs11_renamed_Ihl) 
                           ) && inst_val_Ihl;
 
-  wire [31:0] sb_src_ready;
 
   riscv_CoreScoreboard scoreboard
   (
     .clk                (clk),
     .reset              (reset),
 
-    .srcA0              (rsA0_rt_slot_Ihl),
-    .srcA0_en           (rsA0_en_Ihl),
-    .srcA0_renamed      (rsA0_renamed_Ihl),
-    .srcA1              (rsA1_rt_slot_Ihl),
-    .srcA1_en           (rsA1_en_Ihl),
-    .srcA1_renamed      (rsA1_renamed_Ihl),
-    .dstA               (rob_fill_slot_A_Ihl),
-    .dstA_en            (rob_fill_val_A_Ihl),
+    .rs0_A              (rs0_A_rt_slot_Ihl),
+    .rs0_A_en           (rs0_A_en_Ihl),
+    .rs0_A_renamed      (rs0_A_renamed_Ihl),
+    .rs1_A              (rs1_A_rt_slot_Ihl),
+    .rs1_A_en           (rs1_A_en_Ihl),
+    .rs1_A_renamed      (rs1_A_renamed_Ihl),
+    .rd_A               (ROB_fill_slot_A_Ihl),
+    .rd_A_en            (ROB_fill_val_A_Ihl),
     .func_irA           (func_irA_Ihl),
     .A_issued           (A_issued_Ihl),
 
-    .srcB0              (rsB0_rt_slot_Ihl),
-    .srcB0_en           (rsB0_en_Ihl),
-    .srcB0_renamed      (rsB0_renamed_Ihl),
-    .srcB1              (rsB1_rt_slot_Ihl),
-    .srcB1_en           (rsB1_en_Ihl),
-    .srcB1_renamed      (rsB1_renamed_Ihl),
-    .dstB               (rob_fill_slot_B_Ihl),
-    .dstB_en            (rob_fill_val_B_Ihl),
+    .rs0_B              (rs0_B_rt_slot_Ihl),
+    .rs0_B_en           (rs0_B_en_Ihl),
+    .rs0_B_renamed      (rs0_B_renamed_Ihl),
+    .rs1_B              (rs1_B_rt_slot_Ihl),
+    .rs1_B_en           (rs1_B_en_Ihl),
+    .rs1_B_renamed      (rs1_B_renamed_Ihl),
+    .rd_B               (ROB_fill_slot_B_Ihl),
+    .rd_B_en            (ROB_fill_val_B_Ihl),
     .B_issued           (B_issued_Ihl),
 
     .stall_X0hl         (stall_X0hl),
@@ -1373,17 +1375,17 @@ module riscv_CoreCtrl
     .stall_X3hl         (stall_X3hl),
     .stall_Whl          (stall_Whl),
 
-    .rob_commit_slot_1  (rob_commit_slot_1_Chl),
-    .rob_commit_val_1   (rob_commit_val_1),
-    .rob_commit_slot_2  (rob_commit_slot_2_Chl),
-    .rob_commit_val_2   (rob_commit_val_2),
+    .ROB_commit_slot_A  (ROB_commit_slot_1_Chl),
+    .ROB_commit_ready_A   (ROB_commit_ready_A),
+    .ROB_commit_slot_B  (ROB_commit_slot_2_Chl),
+    .ROB_commit_ready_B   (ROB_commit_ready_B),
 
-    .opA0_byp_mux_sel   (opA0_byp_mux_sel_Ihl),
-    .opA1_byp_mux_sel   (opA1_byp_mux_sel_Ihl),
-    .opB0_byp_mux_sel   (opB0_byp_mux_sel_Ihl),
-    .opB1_byp_mux_sel   (opB1_byp_mux_sel_Ihl),
+    .op0_A_byp_sel   (opA0_byp_mux_sel_Ihl),
+    .op1_A_byp_sel   (opA1_byp_mux_sel_Ihl),
+    .op0_B_byp_sel   (opB0_byp_mux_sel_Ihl),
+    .op1_B_byp_sel   (opB1_byp_mux_sel_Ihl),
 
-    .src_ready          (sb_src_ready)
+    .src_ready          (src_ready_sb)
   );
 
   //----------------------------------------------------------------------
@@ -1419,15 +1421,15 @@ module riscv_CoreCtrl
   reg  [3:0] aluA_fn_X0hl;
   reg        rfA_wen_X0hl;
   reg  [4:0] rfA_waddr_X0hl;
-  reg  [4:0] rob_fill_slot_A_X0hl;
-  reg        rob_fill_val_A_X0hl;
+  reg  [4:0] ROB_fill_slot_A_X0hl;
+  reg        ROB_fill_val_A_X0hl;
 
   reg [31:0] irB_X0hl;
   reg  [3:0] aluB_fn_X0hl;
   reg        rfB_wen_X0hl;
   reg  [4:0] rfB_waddr_X0hl;
-  reg  [4:0] rob_fill_slot_B_X0hl;
-  reg        rob_fill_val_B_X0hl;
+  reg  [4:0] ROB_fill_slot_B_X0hl;
+  reg        ROB_fill_val_B_X0hl;
 
   reg  [2:0] br_sel_X0hl;
   reg        muldivreq_val_X0hl;
@@ -1456,15 +1458,15 @@ module riscv_CoreCtrl
       aluA_fn_X0hl          <= aluA_fn_Ihl;
       rfA_wen_X0hl          <= rfA_wen_Ihl;
       rfA_waddr_X0hl        <= rfA_waddr_Ihl;
-      rob_fill_slot_A_X0hl  <= rob_fill_slot_A_Ihl;
-      rob_fill_val_A_X0hl   <= rob_fill_val_A_Ihl && !bubble_next_Ihl;
+      ROB_fill_slot_A_X0hl  <= ROB_fill_slot_A_Ihl;
+      ROB_fill_val_A_X0hl   <= ROB_fill_val_A_Ihl && !bubble_next_Ihl;
 
       irB_X0hl              <= irB_Ihl;
       aluB_fn_X0hl          <= aluB_fn_Ihl;
       rfB_wen_X0hl          <= rfB_wen_Ihl;
       rfB_waddr_X0hl        <= rfB_waddr_Ihl;
-      rob_fill_slot_B_X0hl  <= rob_fill_slot_B_Ihl;
-      rob_fill_val_B_X0hl   <= rob_fill_val_B_Ihl && !bubble_next_Ihl;
+      ROB_fill_slot_B_X0hl  <= ROB_fill_slot_B_Ihl;
+      ROB_fill_val_B_X0hl   <= ROB_fill_val_B_Ihl && !bubble_next_Ihl;
 
       br_sel_X0hl           <= br_sel_Ihl;
       muldivreq_val_X0hl    <= muldivreq_val_Ihl;
@@ -1567,8 +1569,8 @@ module riscv_CoreCtrl
   reg [31:0] irA_X1hl;
   reg        rfA_wen_X1hl;
   reg  [4:0] rfA_waddr_X1hl;
-  reg  [4:0] rob_fill_slot_A_X1hl;
-  reg        rob_fill_val_A_X1hl;
+  reg  [4:0] ROB_fill_slot_A_X1hl;
+  reg        ROB_fill_val_A_X1hl;
 
   reg        dmemreq_val_X1hl;
   reg  [2:0] dmemresp_mux_sel_X1hl;
@@ -1592,8 +1594,8 @@ module riscv_CoreCtrl
       irA_X1hl              <= irA_X0hl;
       rfA_wen_X1hl          <= rfA_wen_X0hl;
       rfA_waddr_X1hl        <= rfA_waddr_X0hl;
-      rob_fill_slot_A_X1hl  <= rob_fill_slot_A_X0hl;
-      rob_fill_val_A_X1hl   <= rob_fill_val_A_X0hl && !bubble_next_X0hl;
+      ROB_fill_slot_A_X1hl  <= ROB_fill_slot_A_X0hl;
+      ROB_fill_val_A_X1hl   <= ROB_fill_val_A_X0hl && !bubble_next_X0hl;
 
       dmemreq_val_X1hl      <= dmemreq_val;
       dmemresp_mux_sel_X1hl <= dmemresp_mux_sel_X0hl;
@@ -1603,7 +1605,7 @@ module riscv_CoreCtrl
       csr_wen_X1hl          <= csr_wen_X0hl;
       csr_addr_X1hl         <= csr_addr_X0hl;
 
-      bubble_X1hl           <= !(rob_fill_val_A_X0hl && !bubble_next_X0hl);
+      bubble_X1hl           <= !(ROB_fill_val_A_X0hl && !bubble_next_X0hl);
     end
   end
 
@@ -1650,8 +1652,8 @@ module riscv_CoreCtrl
   reg [31:0] irA_X2hl;
   reg        rfA_wen_X2hl;
   reg  [4:0] rfA_waddr_X2hl;
-  reg  [4:0] rob_fill_slot_A_X2hl;
-  reg        rob_fill_val_A_X2hl;
+  reg  [4:0] ROB_fill_slot_A_X2hl;
+  reg        ROB_fill_val_A_X2hl;
 
   reg        dmemresp_queue_val_X1hl;
   reg        csr_wen_X2hl;
@@ -1671,15 +1673,15 @@ module riscv_CoreCtrl
       irA_X2hl              <= irA_X1hl;
       rfA_wen_X2hl          <= rfA_wen_X1hl;
       rfA_waddr_X2hl        <= rfA_waddr_X1hl;
-      rob_fill_slot_A_X2hl  <= rob_fill_slot_A_X1hl;
-      rob_fill_val_A_X2hl   <= rob_fill_val_A_X1hl && !bubble_next_X1hl;
+      ROB_fill_slot_A_X2hl  <= ROB_fill_slot_A_X1hl;
+      ROB_fill_val_A_X2hl   <= ROB_fill_val_A_X1hl && !bubble_next_X1hl;
 
       muldiv_mux_sel_X2hl   <= muldiv_mux_sel_X1hl;
       csr_wen_X2hl          <= csr_wen_X1hl;
       csr_addr_X2hl         <= csr_addr_X1hl;
       execute_mux_sel_X2hl  <= execute_mux_sel_X1hl;
 
-      bubble_X2hl           <= !(rob_fill_val_A_X1hl && !bubble_next_X1hl);
+      bubble_X2hl           <= !(ROB_fill_val_A_X1hl && !bubble_next_X1hl);
     end
     dmemresp_queue_val_X1hl <= dmemresp_queue_val_next_X1hl;
   end
@@ -1714,8 +1716,8 @@ module riscv_CoreCtrl
   reg [31:0] irA_X3hl;
   reg        rfA_wen_X3hl;
   reg  [4:0] rfA_waddr_X3hl;
-  reg  [4:0] rob_fill_slot_A_X3hl;
-  reg        rob_fill_val_A_X3hl;
+  reg  [4:0] ROB_fill_slot_A_X3hl;
+  reg        ROB_fill_val_A_X3hl;
 
   reg        csr_wen_X3hl;
   reg  [4:0] csr_addr_X3hl;
@@ -1734,15 +1736,15 @@ module riscv_CoreCtrl
       irA_X3hl              <= irA_X2hl;
       rfA_wen_X3hl          <= rfA_wen_X2hl;
       rfA_waddr_X3hl        <= rfA_waddr_X2hl;
-      rob_fill_slot_A_X3hl  <= rob_fill_slot_A_X2hl;
-      rob_fill_val_A_X3hl   <= rob_fill_val_A_X2hl && !bubble_next_X2hl;
+      ROB_fill_slot_A_X3hl  <= ROB_fill_slot_A_X2hl;
+      ROB_fill_val_A_X3hl   <= ROB_fill_val_A_X2hl && !bubble_next_X2hl;
 
       muldiv_mux_sel_X3hl   <= muldiv_mux_sel_X2hl;
       csr_wen_X3hl          <= csr_wen_X2hl;
       csr_addr_X3hl         <= csr_addr_X2hl;
       execute_mux_sel_X3hl  <= execute_mux_sel_X2hl;
 
-      bubble_X3hl           <= !(rob_fill_val_A_X2hl && !bubble_next_X2hl);
+      bubble_X3hl           <= !(ROB_fill_val_A_X2hl && !bubble_next_X2hl);
     end
   end
 
@@ -1776,14 +1778,12 @@ module riscv_CoreCtrl
   reg [31:0] irA_Whl;
   reg        rfA_wen_Whl;
   reg  [4:0] rfA_waddr_Whl;
-  reg  [4:0] rob_fill_slot_A_Whl;
-  reg        rob_fill_val_A_Whl;
+  reg        ROB_commit_req_A_Whl;
 
   reg [31:0] irB_Whl;
   reg        rfB_wen_Whl;
   reg  [4:0] rfB_waddr_Whl;
-  reg  [4:0] rob_fill_slot_B_Whl;
-  reg        rob_fill_val_B_Whl;
+  reg        ROB_commit_req_B_Whl;
 
   reg        csr_wen_Whl;
   reg  [4:0] csr_addr_Whl;
@@ -1799,20 +1799,20 @@ module riscv_CoreCtrl
       irA_Whl             <= irA_X3hl;
       rfA_wen_Whl         <= rfA_wen_X3hl;
       rfA_waddr_Whl       <= rfA_waddr_X3hl;
-      rob_fill_slot_A_Whl <= rob_fill_slot_A_X3hl;
-      rob_fill_val_A_Whl  <= rob_fill_val_A_X3hl && !bubble_next_X3hl;
+      ROB_commit_req_slot_A_Whl <= ROB_fill_slot_A_X3hl;
+      ROB_commit_req_A_Whl  <= ROB_fill_val_A_X3hl && !bubble_next_X3hl;
 
       irB_Whl             <= irB_X0hl;
       rfB_wen_Whl         <= rfB_wen_X0hl;
       rfB_waddr_Whl       <= rfB_waddr_X0hl;
-      rob_fill_slot_B_Whl <= rob_fill_slot_B_X0hl;
-      rob_fill_val_B_Whl  <= rob_fill_val_B_X0hl && !bubble_next_X0hl;
+      ROB_commit_req_slot_B_Whl <= ROB_fill_slot_B_X0hl;
+      ROB_commit_req_B_Whl  <= ROB_fill_val_B_X0hl && !bubble_next_X0hl;
 
       csr_wen_Whl         <= csr_wen_X3hl;
       csr_addr_Whl        <= csr_addr_X3hl;
 
-      bubble_Whl          <= !(rob_fill_val_B_X0hl && !bubble_next_X0hl) &&
-                             !(rob_fill_val_A_X3hl && !bubble_next_X3hl);
+      bubble_Whl          <= !(ROB_fill_val_B_X0hl && !bubble_next_X0hl) &&
+                             !(ROB_fill_val_A_X3hl && !bubble_next_X3hl);
     end
   end
 
@@ -1826,8 +1826,8 @@ module riscv_CoreCtrl
 
   // Only set register file wen if instruction is valid
 
-  wire rfA_wen_out_Whl = ( rob_fill_val_A_Whl && !stall_Whl && rfA_wen_Whl );
-  wire rfB_wen_out_Whl = ( rob_fill_val_B_Whl && !stall_Whl && rfB_wen_Whl );
+  wire rfA_wen_out_Whl = ( ROB_commit_req_A_Whl && !stall_Whl && rfA_wen_Whl );
+  wire rfB_wen_out_Whl = ( ROB_commit_req_B_Whl && !stall_Whl && rfB_wen_Whl );
 
   // Dummy squash and stall signals
 
@@ -1836,8 +1836,8 @@ module riscv_CoreCtrl
 
   // Reorder Buffer signals
 
-  wire rob_fill_wen_A_Whl = rfA_wen_out_Whl && rob_fill_val_A_Whl;
-  wire rob_fill_wen_B_Whl = rfB_wen_out_Whl && rob_fill_val_B_Whl;
+  wire ROB_fill_wen_A_Whl = rfA_wen_out_Whl && ROB_commit_req_A_Whl;
+  wire ROB_fill_wen_B_Whl = rfB_wen_out_Whl && ROB_commit_req_B_Whl;
 
   //----------------------------------------------------------------------
   // Debug registers for instruction disassembly
@@ -1861,7 +1861,7 @@ module riscv_CoreCtrl
   reg         csr_stats;
 
   always @ ( posedge clk ) begin
-    if ( csr_wen_Whl && rob_fill_val_A_Whl ) begin
+    if ( csr_wen_Whl && ROB_commit_req_A_Whl ) begin
       case ( csr_addr_Whl )
         12'd10 : csr_stats  <= proc2csr_data_Whl[0];
         12'd21 : csr_status <= proc2csr_data_Whl;
@@ -1985,11 +1985,11 @@ module riscv_CoreCtrl
   reg [31:0] num_cycles  = 32'b0;
   reg        stats_en    = 1'b0; // Used for enabling stats on asm tests
 
-  wire rob_commit_spec_1;
-  wire rob_commit_spec_2;
+  wire ROB_commit_spec_A;
+  wire ROB_commit_spec_B;
 
-  wire count0 = rob_commit_val_1 && !rob_commit_spec_1;
-  wire count1 = rob_commit_val_2 && !rob_commit_spec_2;
+  wire count0 = ROB_commit_ready_A && !ROB_commit_spec_A;
+  wire count1 = ROB_commit_ready_B && !ROB_commit_spec_B;
 
   always @( posedge clk ) begin
     if ( !reset ) begin

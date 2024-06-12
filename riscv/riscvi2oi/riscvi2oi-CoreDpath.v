@@ -74,22 +74,22 @@ module riscv_CoreDpath
 
   // Reorder Buffer Signals (ctrl->dpath)
 
-  input [ 4:0] opA0_byp_rob_slot_Ihl,
-  input [ 4:0] opA1_byp_rob_slot_Ihl,
-  input [ 4:0] opB0_byp_rob_slot_Ihl,
-  input [ 4:0] opB1_byp_rob_slot_Ihl,
+  input [ 4:0] opA0_byp_ROB_slot_Ihl,
+  input [ 4:0] opA1_byp_ROB_slot_Ihl,
+  input [ 4:0] opB0_byp_ROB_slot_Ihl,
+  input [ 4:0] opB1_byp_ROB_slot_Ihl,
 
-  input        rob_fill_wen_A_Whl,
-  input [ 4:0] rob_fill_slot_A_Whl,
-  input        rob_fill_wen_B_Whl,
-  input [ 4:0] rob_fill_slot_B_Whl,
+  input        ROB_fill_wen_A_Whl,
+  input [ 4:0] ROB_commit_req_slot_A_Whl,
+  input        ROB_fill_wen_B_Whl,
+  input [ 4:0] ROB_commit_req_slot_B_Whl,
 
-  input        rob_commit_wen_1_Chl,
-  input [ 4:0] rob_commit_slot_1_Chl,
-  input [ 4:0] rob_commit_waddr_1_Chl,
-  input        rob_commit_wen_2_Chl,
-  input [ 4:0] rob_commit_slot_2_Chl,
-  input [ 4:0] rob_commit_waddr_2_Chl
+  input        ROB_commit_wen_1_Chl,
+  input [ 4:0] ROB_commit_slot_1_Chl,
+  input [ 4:0] ROB_commit_waddr_1_Chl,
+  input        ROB_commit_wen_2_Chl,
+  input [ 4:0] ROB_commit_slot_2_Chl,
+  input [ 4:0] ROB_commit_waddr_2_Chl
 );
 
   //--------------------------------------------------------------------
@@ -145,9 +145,7 @@ module riscv_CoreDpath
   end
 
   //--------------------------------------------------------------------
-  // Fetch Stage
-  //--------------------------------------------------------------------
-
+  // Fetch StageopB1_byp_ROB_slot_Ihl
   // PC incrementer
 
   wire [31:0] pc_plus4_Fhl;
@@ -322,7 +320,7 @@ module riscv_CoreDpath
     : ( opA0_byp_mux_sel_Ihl == 4'd8 )  ? aluB_out_X2hl
     : ( opA0_byp_mux_sel_Ihl == 4'd9 )  ? aluB_out_X3hl
     : ( opA0_byp_mux_sel_Ihl == 4'd10 ) ? aluB_out_Whl
-    : ( opA0_byp_mux_sel_Ihl == 4'd11 ) ? rob_data[opA0_byp_rob_slot_Ihl]
+    : ( opA0_byp_mux_sel_Ihl == 4'd11 ) ? ROB_data[opA0_byp_ROB_slot_Ihl]
     :                                    32'bx;
 
   // Operand A0 mux
@@ -348,7 +346,7 @@ module riscv_CoreDpath
     : ( opA1_byp_mux_sel_Ihl == 4'd8 )  ? aluB_out_X2hl
     : ( opA1_byp_mux_sel_Ihl == 4'd9 )  ? aluB_out_X3hl
     : ( opA1_byp_mux_sel_Ihl == 4'd10 ) ? aluB_out_Whl
-    : ( opA1_byp_mux_sel_Ihl == 4'd11 ) ? rob_data[opA1_byp_rob_slot_Ihl]
+    : ( opA1_byp_mux_sel_Ihl == 4'd11 ) ? ROB_data[opA1_byp_ROB_slot_Ihl]
     :                                   32'bx;
 
   // Operand A1 mux
@@ -377,7 +375,7 @@ module riscv_CoreDpath
     : ( opB0_byp_mux_sel_Ihl == 4'd8 )  ? aluB_out_X2hl
     : ( opB0_byp_mux_sel_Ihl == 4'd9 )  ? aluB_out_X3hl
     : ( opB0_byp_mux_sel_Ihl == 4'd10 ) ? aluB_out_Whl
-    : ( opB0_byp_mux_sel_Ihl == 4'd11 ) ? rob_data[opB0_byp_rob_slot_Ihl]
+    : ( opB0_byp_mux_sel_Ihl == 4'd11 ) ? ROB_data[opB0_byp_ROB_slot_Ihl]
     :                                    32'bx;
 
   // Operand B0 mux
@@ -403,7 +401,7 @@ module riscv_CoreDpath
     : ( opB1_byp_mux_sel_Ihl == 4'd8 )  ? aluB_out_X2hl
     : ( opB1_byp_mux_sel_Ihl == 4'd9 )  ? aluB_out_X3hl
     : ( opB1_byp_mux_sel_Ihl == 4'd10 ) ? aluB_out_Whl
-    : ( opB1_byp_mux_sel_Ihl == 4'd11 ) ? rob_data[opB1_byp_rob_slot_Ihl]
+    : ( opB1_byp_mux_sel_Ihl == 4'd11 ) ? ROB_data[opB1_byp_ROB_slot_Ihl]
     :                                   32'bx;
 
   // Operand B1 mux
@@ -646,7 +644,17 @@ module riscv_CoreDpath
   reg  [31:0] aluB_out_Whl;
 
   always @ (posedge clk) begin
-    if( !stall_Whl ) begin
+    if( !stall_Whl ) beginpB0_byp_mux_sel_Ihl,
+  output  [1:0] opB0_mux_sel_Ihl,
+  output  [3:0] opB1_byp_mux_sel_Ihl,
+  output  [2:0] opB1_mux_sel_Ihl,
+  output [31:0] instA_Ihl,
+  output [31:0] instB_Ihl,
+  output  [3:0] aluA_fn_X0hl,
+  output  [3:0] aluB_fn_X0hl,
+  output  [2:0] muldivreq_msg_fn_Ihl,
+  output        muldivreq_val,
+  input         muldi
       pcA_Whl                 <= pcA_X3hl;
       wbA_mux_out_Whl         <= executeA_mux_out_X3hl;
 
@@ -659,14 +667,14 @@ module riscv_CoreDpath
   // Writeback Stage
   //----------------------------------------------------------------------
 
-  reg [31:0] rob_data [31:0];
+  reg [31:0] ROB_data [31:0];
 
   always @ ( posedge clk ) begin
-    if (rob_fill_wen_A_Whl) begin
-      rob_data[rob_fill_slot_A_Whl] <= wbA_mux_out_Whl;
+    if (ROB_fill_wen_A_Whl) begin
+      ROB_data[ROB_commit_req_slot_A_Whl] <= wbA_mux_out_Whl;
     end
-    if (rob_fill_wen_B_Whl) begin
-      rob_data[rob_fill_slot_B_Whl] <= aluB_out_Whl;
+    if (ROB_fill_wen_B_Whl) begin
+      ROB_data[ROB_commit_req_slot_B_Whl] <= aluB_out_Whl;
     end
   end
 
@@ -678,13 +686,13 @@ module riscv_CoreDpath
   // Commit Stage
   //----------------------------------------------------------------------
 
-  wire [31:0] rf1_wdata_Chl = rob_data[rob_commit_slot_1_Chl];
-  wire [ 4:0] rf1_waddr_Chl = rob_commit_waddr_1_Chl;
-  wire        rf1_wen_Chl   = rob_commit_wen_1_Chl;
+  wire [31:0] rf1_wdata_Chl = ROB_data[ROB_commit_slot_1_Chl];
+  wire [ 4:0] rf1_waddr_Chl = ROB_commit_waddr_1_Chl;
+  wire        rf1_wen_Chl   = ROB_commit_wen_1_Chl;
 
-  wire [31:0] rf2_wdata_Chl = rob_data[rob_commit_slot_2_Chl];
-  wire [ 4:0] rf2_waddr_Chl = rob_commit_waddr_2_Chl;
-  wire        rf2_wen_Chl   = rob_commit_wen_2_Chl;
+  wire [31:0] rf2_wdata_Chl = ROB_data[ROB_commit_slot_2_Chl];
+  wire [ 4:0] rf2_waddr_Chl = ROB_commit_waddr_2_Chl;
+  wire        rf2_wen_Chl   = ROB_commit_wen_2_Chl;
 
   riscv_CoreDpathRegfile rfile
   (
