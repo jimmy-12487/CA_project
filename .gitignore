@@ -1,0 +1,7 @@
+*docker_CA*
+*tmp*
+*vmh*
+*vcd*
+*riscv/build/*
+*riscv/ubmark/build/*
+*riscv/tests/build/*
