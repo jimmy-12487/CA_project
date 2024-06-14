@@ -704,10 +704,10 @@ module riscv_CoreCtrl
   wire ROB_commit_ready_A;
   wire ROB_commit_ready_B;
 
-  wire raw_hazard0_Dhl = (    inst_val_Dhl && rf0_wen_Dhl )
+  wire raw_hazardA_Dhl = (    inst_val_Dhl && rf0_wen_Dhl )
                        && ( ( rf0_waddr_Dhl == rs0_i1_addr_Dhl ) && rs0_i1_en_Dhl );
 
-  wire raw_hazard1_Dhl = (    inst_val_Dhl && rf0_wen_Dhl )
+  wire raw_hazardB_Dhl = (    inst_val_Dhl && rf0_wen_Dhl )
                        && ( ( rf0_waddr_Dhl == rs1_i1_addr_Dhl ) && rs1_i1_en_Dhl );
 
   // speculative instruction
@@ -823,8 +823,8 @@ module riscv_CoreCtrl
     .ROB_alloc_slot_A       (ROB_resp_slot_1),
     .ROB_alloc_slot_B       (ROB_resp_slot_2),
 
-    .raw_hazard0                 (raw_hazard0_Dhl),
-    .raw_hazard1                 (raw_hazard1_Dhl),
+    .raw_hazardA                 (raw_hazardA_Dhl),
+    .raw_hazardB                 (raw_hazardB_Dhl),
 
     .rs0_i0_addr                       (rs0_i0_addr_Dhl),
     .rs1_i0_addr                       (rs1_i0_addr_Dhl),

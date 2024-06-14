@@ -43,8 +43,8 @@ module riscv_CoreReorderBuffer
   output  [4:0] ROB_alloc_slot_A,
   output  [4:0] ROB_alloc_slot_B,
 
-  input         raw_hazard0,
-  input         raw_hazard1,
+  input         raw_hazardA,
+  input         raw_hazardB,
 
   input   [4:0] rs0_i0_addr,
   input   [4:0] rs1_i0_addr,
@@ -207,19 +207,19 @@ module riscv_CoreReorderBuffer
   // Rename Table
   //----------------------------------------------------------------------  
 
-  reg [31:0] rt_renamed;
+  reg [31:0] renamed;
   reg [31:0] spec_renamed;
-  reg  [4:0] rt_rename_slot   [31:0];
+  reg  [4:0] rename_slot   [31:0];
   reg  [4:0] spec_rename_slot [31:0];
 
   // Reset
   always @ (posedge clk) begin
     if( reset ) begin
-      rt_renamed    <= 32'b0;
+      renamed    <= 32'b0;
       spec_renamed  <= 32'b0;
 
       for( i = 0; i < 32; i = i + 1 ) begin
-        rt_rename_slot[i]   <= 5'b0;
+        rename_slot[i]   <= 5'b0;
         spec_rename_slot[i] <= 5'b0;
       end
     end
@@ -230,10 +230,8 @@ module riscv_CoreReorderBuffer
   //----------------------------------------------------------------------
 
   // Only rename if the instruction writes a register
-  wire rt_entry_1 = ROB_entry_in_use_A && ROB_req_we_A
-                  && ROB_req_preg_A != 5'b0;
-  wire rt_entry_2 = ROB_entry_in_use_B && ROB_req_we_B
-                  && ROB_req_preg_B != 5'b0;
+  wire rename_alloc_A = ROB_entry_in_use_A && ROB_req_we_A && ROB_req_preg_A != 5'b0;
+  wire rename_alloc_B = ROB_entry_in_use_B && ROB_req_we_B && ROB_req_preg_B != 5'b0;
   always @ (posedge clk) begin
     if(ROB_entry_in_use_A && ROB_entry_in_use_B) begin
       if(ROB_req_we_A && ROB_req_preg_A != 5'b0) begin
@@ -244,8 +242,8 @@ module riscv_CoreReorderBuffer
           spec_rename_slot[ROB_req_preg_A]  <= ROB_tail;
         end
         else begin
-          rt_renamed[ROB_req_preg_A]      <= 1'b1;
-          rt_rename_slot[ROB_req_preg_A]  <= ROB_tail;
+          renamed[ROB_req_preg_A]      <= 1'b1;
+          rename_slot[ROB_req_preg_A]  <= ROB_tail;
         end
       end
 
@@ -257,12 +255,12 @@ module riscv_CoreReorderBuffer
           spec_rename_slot[ROB_req_preg_B]  <= ROB_tail + 1'b1;
         end
         else begin
-          rt_renamed[ROB_req_preg_B]      <= 1'b1;
-          rt_rename_slot[ROB_req_preg_B]  <= ROB_tail + 1'b1;
+          renamed[ROB_req_preg_B]      <= 1'b1;
+          rename_slot[ROB_req_preg_B]  <= ROB_tail + 1'b1;
         end
       end
     end
-    else if(rt_entry_1) begin
+    else if(rename_alloc_A) begin
 
       // Check if the instruction is speculative
       if(ROB_req_spec_A) begin
@@ -270,11 +268,11 @@ module riscv_CoreReorderBuffer
         spec_rename_slot[ROB_req_preg_A]  <= ROB_tail;
       end
       else begin
-        rt_renamed[ROB_req_preg_A]      <= 1'b1;
-        rt_rename_slot[ROB_req_preg_A]  <= ROB_tail;
+        renamed[ROB_req_preg_A]      <= 1'b1;
+        rename_slot[ROB_req_preg_A]  <= ROB_tail;
       end
     end
-    else if(rt_entry_2) begin
+    else if(rename_alloc_B) begin
 
       // Check if the instruction is speculative
       if(ROB_req_spec_B) begin
@@ -282,8 +280,8 @@ module riscv_CoreReorderBuffer
         spec_rename_slot[ROB_req_preg_B]  <= ROB_tail;
       end
       else begin
-        rt_renamed[ROB_req_preg_B]      <= 1'b1;
-        rt_rename_slot[ROB_req_preg_B]  <= ROB_tail;
+        renamed[ROB_req_preg_B]      <= 1'b1;
+        rename_slot[ROB_req_preg_B]  <= ROB_tail;
       end
     end
   end
@@ -294,20 +292,20 @@ module riscv_CoreReorderBuffer
 
   always @ (posedge clk) begin
     if(ROB_commit_ready_A) begin
-      if( rt_rename_slot[ROB_commit_rdaddr_A] == ROB_head ) begin
+      if( rename_slot[ROB_commit_rdaddr_A] == ROB_head ) begin
         // Check that the same architectural register isn't also being renamed
-        if( !(rt_entry_1 && ROB_commit_rdaddr_A == ROB_req_preg_A) &&
-            !(rt_entry_2 && ROB_commit_rdaddr_A == ROB_req_preg_B) ) begin
-          rt_renamed[ROB_commit_rdaddr_A] <= 1'b0;
+        if( !(rename_alloc_A && ROB_commit_rdaddr_A == ROB_req_preg_A) &&
+            !(rename_alloc_B && ROB_commit_rdaddr_A == ROB_req_preg_B) ) begin
+          renamed[ROB_commit_rdaddr_A] <= 1'b0; 
         end
       end
     end
     if(ROB_commit_ready_B) begin
-      if( rt_rename_slot[ROB_commit_rdaddr_B] == ROB_head + 1'b1 ) begin
+      if( rename_slot[ROB_commit_rdaddr_B] == ROB_head + 1'b1 ) begin
         // Check that the same architectural register isn't also being renamed
-        if( !(rt_entry_1 && ROB_commit_rdaddr_B == ROB_req_preg_A) &&
-            !(rt_entry_2 && ROB_commit_rdaddr_B == ROB_req_preg_B) ) begin
-          rt_renamed[ROB_commit_rdaddr_B] <= 1'b0;
+        if( !(rename_alloc_A && ROB_commit_rdaddr_B == ROB_req_preg_A) &&
+            !(rename_alloc_B && ROB_commit_rdaddr_B == ROB_req_preg_B) ) begin
+          renamed[ROB_commit_rdaddr_B] <= 1'b0;
         end
       end
     end
@@ -318,26 +316,26 @@ module riscv_CoreReorderBuffer
   //----------------------------------------------------------------------
 
   assign rs0_i0_renamed = (ROB_req_spec_A && spec_renamed[rs0_i0_addr]) ? 1'b1
-                       : rt_renamed[rs0_i0_addr];
+                       : renamed[rs0_i0_addr];
   assign rs1_i0_renamed = (ROB_req_spec_A && spec_renamed[rs1_i0_addr]) ? 1'b1
-                       : rt_renamed[rs1_i0_addr];
+                       : renamed[rs1_i0_addr];
   assign rs0_i0_slot = (ROB_req_spec_A && spec_renamed[rs0_i0_addr]) ? spec_rename_slot[rs0_i0_addr]
-                    : rt_rename_slot[rs0_i0_addr];
+                    : rename_slot[rs0_i0_addr];
   assign rs1_i0_slot = (ROB_req_spec_A && spec_renamed[rs1_i0_addr]) ? spec_rename_slot[rs1_i0_addr]
-                    : rt_rename_slot[rs1_i0_addr];
+                    : rename_slot[rs1_i0_addr];
 
-  assign rs0_i1_renamed = (raw_hazard0) ? 1'b1
+  assign rs0_i1_renamed = (raw_hazardA) ? 1'b1
                        : (ROB_req_spec_B && spec_renamed[rs0_i1_addr]) ? 1'b1
-                       : rt_renamed[rs0_i1_addr];
-  assign rs1_i1_renamed = (raw_hazard1) ? 1'b1
+                       : renamed[rs0_i1_addr];
+  assign rs1_i1_renamed = (raw_hazardB) ? 1'b1
                        : (ROB_req_spec_B && spec_renamed[rs1_i1_addr]) ? 1'b1
-                       : rt_renamed[rs1_i1_addr];
-  assign rs0_i1_slot = (raw_hazard0) ? ROB_tail
+                       : renamed[rs1_i1_addr];
+  assign rs0_i1_slot = (raw_hazardA) ? ROB_tail
                     : (ROB_req_spec_B && spec_renamed[rs0_i1_addr]) ? spec_rename_slot[rs0_i1_addr]
-                    : rt_rename_slot[rs0_i1_addr];
-  assign rs1_i1_slot = (raw_hazard1) ? ROB_tail
+                    : rename_slot[rs0_i1_addr];
+  assign rs1_i1_slot = (raw_hazardB) ? ROB_tail
                     : (ROB_req_spec_B && spec_renamed[rs1_i1_addr]) ? spec_rename_slot[rs1_i1_addr]
-                    : rt_rename_slot[rs1_i1_addr];
+                    : rename_slot[rs1_i1_addr];
 
   //----------------------------------------------------------------------
   // Rename Table Speculation
@@ -347,8 +345,8 @@ module riscv_CoreReorderBuffer
     if( brj_resolved_X0hl ) begin
       for( i = 0; i < 32; i = i + 1 ) begin
         if( spec_renamed[i] && !brj_taken_X0hl ) begin
-          rt_renamed[i]     = 1'b1;
-          rt_rename_slot[i] = spec_rename_slot[i];
+          renamed[i]     = 1'b1;
+          rename_slot[i] = spec_rename_slot[i];
         end
       end
       spec_renamed = 32'b0;
