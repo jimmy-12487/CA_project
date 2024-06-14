@@ -30,6 +30,8 @@ make check-asm-riscvstall
 make check-asm-rand-riscvstall
 make check-asm-riscvlong
 make check-asm-rand-riscvlong
+make check-asm-riscvi2oi
+make check-asm-rand-riscvi2oi
 ```
 
 You can also run a single assembly separately by invoking the simulator
@@ -37,7 +39,7 @@ directly. For example, if we want to run the assembly test for riscv-addi on its
 own:
 ```
 cd $CORE_ROOT/build
-./riscvstall-sim +exe=../tests/build/vmh/riscv-addi.vmh +stats=1
+./riscvi2oi-sim +exe=../tests/build/vmh/riscv-addi.vmh +stats=1
 ```
 
 ### Running C Microbenchmarks:
@@ -51,6 +53,7 @@ cd $CORE_ROOT/build
 make
 make run-bmark-riscvstall
 make run-bmark-riscvlong
+make run-bmark-riscvi2oi
 ```
 
 ### Disassembling Instructions for Debugging
@@ -62,7 +65,7 @@ you can run the riscvstall simulator with a disassembly level of 2 like this:
 
 ```
 cd $CORE_ROOT/build
-./riscvstall-sim +disasm=2 +exe=../tests/build/vmh/riscv-addi.vmh
+./riscvi2oi-sim +disasm=2 +exe=../tests/build/vmh/riscv-addi.vmh
 ```
 Of course, this option can be used in conjunction with other options like, +vcd
 or +stats.
